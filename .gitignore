@@ -1,0 +1,20 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Node (por si se agrega tooling en el futuro)
+node_modules/
+dist/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Nunca versionar datos reales del navegador (solo aplica a exportaciones futuras)
+exports/

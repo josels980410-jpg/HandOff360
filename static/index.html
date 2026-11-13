@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#050807">
+  <meta name="description" content="HandOff 360 — Plataforma inteligente para la continuidad operativa en cambios de turno. 100% local.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>HandOff 360 · Continuidad operativa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23050807'/%3E%3Cpath d='M7 16h13m0 0-4.5-4.5M18 16l-4.5 4.5M25 10v12' stroke='%2312B76A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <header id="appHeader" class="app-header" hidden></header>
+
+    <main id="view" class="app-view" aria-live="polite"></main>
+
+    <nav id="bottomNav" class="bottom-nav" aria-label="Navegación principal" hidden></nav>
+
+    <button id="chatFab" class="chat-fab" type="button" aria-label="Abrir asistente HandOff" hidden>
+      <span class="chat-fab__pulse" aria-hidden="true"></span>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="4" y="7" width="16" height="12" rx="3.5"></rect>
+        <path d="M12 3v4"></path>
+        <circle cx="9.2" cy="12.6" r=".9" fill="currentColor" stroke="none"></circle>
+        <circle cx="14.8" cy="12.6" r=".9" fill="currentColor" stroke="none"></circle>
+        <path d="M9.2 16.2h5.6"></path>
+      </svg>
+      <span class="chat-fab__badge" aria-hidden="true"></span>
+    </button>
+
+    <div id="chatRoot"></div>
+    <div id="modalRoot"></div>
+    <div id="toastRoot" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
