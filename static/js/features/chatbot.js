@@ -10,7 +10,7 @@ import {
 import { searchSector } from '../core/search.js';
 import { navigate } from '../core/router.js';
 import { icon } from '../core/icons.js';
-import { toast } from '../core/ui.js';
+import { bindTap, toast } from '../core/ui.js';
 import {
   escapeHtml,
   firstName,
@@ -80,6 +80,7 @@ let sectorId = null;
 let panelOpen = false;
 let respondTimer = null;
 let dictation = null;
+let openedAt = 0;
 let ctx = { pendingClose: false };
 
 export function initChat({ fab: fabElement, container }) {
@@ -114,8 +115,8 @@ export function initChat({ fab: fabElement, container }) {
   inputEl = container.querySelector('[data-input]');
   micBtn = container.querySelector('[data-mic]');
 
-  fab.addEventListener('click', () => openChat());
-  scrim.addEventListener('click', closeChat);
+  bindTap(fab, () => openChat());
+  scrim.addEventListener('click', closeFromScrim);
   container.querySelector('[data-close]').addEventListener('click', closeChat);
   container.querySelector('[data-send]').addEventListener('click', () => submit());
   inputEl.addEventListener('keydown', (event) => {
@@ -165,6 +166,7 @@ function isTouchDevice() {
 export function openChat({ focus = true } = {}) {
   if (!sectorId) return;
   ensureGreeting();
+  openedAt = Date.now();
   panel.classList.add('is-open');
   scrim.classList.add('is-open');
   panelOpen = true;
@@ -172,6 +174,12 @@ export function openChat({ focus = true } = {}) {
   if (focus && !isTouchDevice()) {
     window.setTimeout(() => inputEl.focus({ preventScroll: true }), 280);
   }
+}
+
+function closeFromScrim(event) {
+  if (event.target !== scrim) return;
+  if (Date.now() - openedAt < 500) return;
+  closeChat();
 }
 
 export function closeChat() {

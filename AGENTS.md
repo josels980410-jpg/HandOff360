@@ -74,8 +74,8 @@ HandOff360/
 | `core/search.js` | Funciones puras de búsqueda. No conoce el DOM ni el store. |
 | `core/metrics.js` | Cálculo puro de los KPIs del sector a partir del estado. No muta nada ni conoce el DOM. |
 | `core/staff.js` | Dominio de personal: turnos, roles, sectores con rol de encargado y cálculos puros de cobertura y distribución. No conoce el DOM ni el store. |
-| `core/viewport.js` | Publica `--vvh`, `--vv-top` y `--kb-inset` desde `visualViewport` para que el shell y el chat se ajusten al área realmente visible con el teclado abierto. |
-| `core/ui.js` | Componentes transversales. No importa vistas ni store. |
+| `core/viewport.js` | Publica `--vvh`, `--vv-top` y `--kb-inset` desde `visualViewport` para que el shell y el chat se ajusten al área realmente visible con el teclado abierto. Ignora alturas degeneradas (< 240 px) para que el shell nunca colapse a 0. |
+| `core/ui.js` | Componentes transversales. No importa vistas ni store. Expone `bindTap()` para activar controles de forma robusta en touch. |
 | `core/details.js` | Abre modales de detalle de caso y reporte. El caso permite registrar una resolución local y eliminar la alerta activa asociada. |
 | `core/support.js` | Modal de Soporte Técnico: FAQ operativas, reporte de fallas, contacto 24/7 simulado y botón de asesor. Recibe `onTalkToAdvisor` por callback; no importa vistas ni el chatbot. |
 | `core/critical.js` | Selecciona la alerta más urgente y abre el modal crítico; registra el acuse local. No renderiza la vista ni apila modales. |
@@ -201,7 +201,9 @@ Vista/evento → store.action() → state en memoria → localStorage → emit �
 - La alerta mostrada es la más urgente de `sector.alerts` (crítica más reciente; fallback a la de mayor severidad disponible). Al cerrar, el dashboard y las pestañas quedan navegables.
 - El detalle de caso (`core/details.js`) muestra una resolución interactiva si el caso no tiene `resolution`: textarea, dictado por voz y acción primaria “Resolver y Cerrar Alerta”. La nota es obligatoria; al guardar se cierra el modal y el dashboard se re-renderiza sin la alerta. Si el caso ya fue resuelto, muestra la nota y los metadatos de resolución.
 - `modal()` acepta `onMount(overlay, close)` para conectar controles dentro del modal recién creado y `onClose` para liberar recursos transversales (por ejemplo, detener el dictado al cerrar con X, fondo o Escape).
-- `modal()` revela el overlay con `requestAnimationFrame` **y** un `setTimeout` de respaldo: si el navegador throttlea la animación (pestaña en segundo plano, modo de bajo consumo), el modal debe quedar visible e interactible de todos modos.
+- `modal()` revela el overlay con `requestAnimationFrame` **y** un `setTimeout` de respaldo: si el navegador throttlea la animación (pestaña en segundo plano, modo de bajo consumo), el modal debe quedar visible e interactible de todos modos. El `reveal` respeta el flag `closed` y su timer se cancela al cerrar, para que un modal cerrado **no reaparezca** y tape la pantalla.
+- `bindTap(element, handler)` (en `core/ui.js`) activa un control con toque, ratón o teclado: escucha `pointerup` y descarta el `click` sintetizado posterior. Un arrastre (movimiento > 12 px) no dispara la acción. Se usa en el botón de Soporte del header, en el botón de asesor del modal y en las acciones de los modales.
+- El scrim del chat (`closeFromScrim`) **ignora los clics de los primeros 500 ms** tras abrir el panel: en móvil, el `click` sintetizado del toque que abre el chat llega tarde y cae sobre el scrim, lo que cerraba el asistente en el mismo gesto.
 - El modal de Soporte (`core/support.js`) muestra FAQ operativas en `<details>`, un formulario de reporte de fallas, el contacto 24/7 simulado (teléfono + correo) y un botón “💬 Hablar con un asesor”. El reporte se guarda con `addSupportTicket` y el modal se cierra al enviar.
 - El botón de asesor cierra el modal e invoca `onTalkToAdvisor` (callback que `app.js` conecta con `openAdvisorChat`). `core/` nunca importa `features/`: la costura se hace por callback.
 - `openAdvisorChat()` (en `features/chatbot.js`) abre el panel del asistente e inyecta un mensaje con `advisor: true` y los 6 `chips` de soporte. Si ya existe un mensaje de asesor, solo abre el panel sin duplicarlo.
@@ -330,10 +332,11 @@ $env:HOST = "0.0.0.0"
 14. El botón de Soporte abre el modal con FAQ, reporte de fallas y contacto 24/7; el reporte enviado queda guardado en `localStorage`.
 15. El botón “💬 Hablar con un asesor” abre el asistente con el mensaje de asesor y los 6 chips de soporte; cada chip responde con una solución local y el estado persiste tras recargar.
 16. En móvil (puntero táctil) el chat se abre **sin teclado en pantalla**, los 6 chips quedan visibles y alcanzables con el dedo, y siguen siendo tocables con el teclado abierto tras hacer scroll.
-17. El Bloc Offline permite escribir y dictar notas, listarlas y convertirlas en pendientes oficiales tanto desde la vista como desde el chatbot; las notas persisten tras recargar.
-18. En Salud, el panel ofrece **Gestión de Encargado de Área**: se registra personal, se marca falta/en puesto, se mueve de área y de turno, y todo persiste tras recargar.
-19. El tablero de turnos muestra los tres turnos con cobertura, personal total, en puesto y faltas, más la distribución por área; en otros sectores esas rutas redirigen al panel.
-20. La app funciona sin conexión (todo está en `localStorage`).
+17. El botón de Soporte y el de asesor responden a un toque real en móvil: el modal no debe reaparecer tras cerrarse y el chat no debe cerrarse en el mismo gesto que lo abre.
+18. El Bloc Offline permite escribir y dictar notas, listarlas y convertirlas en pendientes oficiales tanto desde la vista como desde el chatbot; las notas persisten tras recargar.
+19. En Salud, el panel ofrece **Gestión de Encargado de Área**: se registra personal, se marca falta/en puesto, se mueve de área y de turno, y todo persiste tras recargar.
+20. El tablero de turnos muestra los tres turnos con cobertura, personal total, en puesto y faltas, más la distribución por área; en otros sectores esas rutas redirigen al panel.
+21. La app funciona sin conexión (todo está en `localStorage`).
 
 ---
 

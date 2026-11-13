@@ -1,6 +1,6 @@
 import { addSupportTicket, getSector } from './store.js';
 import { icon } from './icons.js';
-import { modal, toast } from './ui.js';
+import { bindTap, modal, toast } from './ui.js';
 import { escapeHtml } from './utils.js';
 
 export const SUPPORT_PHONE = '+52 800 000 0000';
@@ -32,6 +32,7 @@ const FAQS = [
 export function openSupport(sectorId, { onTalkToAdvisor } = {}) {
   const sector = getSector(sectorId);
   if (!sector) return;
+  if (document.querySelector('#modalRoot .overlay.is-open #supportForm')) return;
 
   const body = `
     <div class="support-advisor">
@@ -121,10 +122,12 @@ export function openSupport(sectorId, { onTalkToAdvisor } = {}) {
     actions: [{ label: 'Cerrar', variant: 'soft' }],
     onMount: (overlay, close) => {
       const advisorBtn = overlay.querySelector('#supportAdvisorBtn');
-      advisorBtn?.addEventListener('click', () => {
-        close();
-        if (typeof onTalkToAdvisor === 'function') onTalkToAdvisor();
-      });
+      if (advisorBtn) {
+        bindTap(advisorBtn, () => {
+          close();
+          if (typeof onTalkToAdvisor === 'function') onTalkToAdvisor();
+        });
+      }
 
       const form = overlay.querySelector('#supportForm');
       form?.addEventListener('submit', (event) => {

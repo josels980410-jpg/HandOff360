@@ -60,14 +60,19 @@ export function modal({
 
   root.appendChild(overlay);
 
-  const reveal = () => overlay.classList.add('is-open');
-  requestAnimationFrame(reveal);
-  window.setTimeout(reveal, 60);
-
   let closed = false;
+  let revealTimer = 0;
+  const reveal = () => {
+    if (closed) return;
+    overlay.classList.add('is-open');
+  };
+  requestAnimationFrame(reveal);
+  revealTimer = window.setTimeout(reveal, 60);
+
   const close = () => {
     if (closed) return;
     closed = true;
+    window.clearTimeout(revealTimer);
     overlay.classList.remove('is-open');
     window.setTimeout(() => overlay.remove(), 220);
     document.removeEventListener('keydown', onKeydown);
@@ -85,7 +90,7 @@ export function modal({
   overlay.querySelector('[data-modal-close]').addEventListener('click', close);
 
   overlay.querySelectorAll('[data-action]').forEach((button) => {
-    button.addEventListener('click', () => {
+    bindTap(button, () => {
       const action = actions[Number(button.dataset.action)];
       const result = action.onClick ? action.onClick(close) : undefined;
       if (result !== false) close();
@@ -129,5 +134,58 @@ export function confirmDialog({
         },
       ],
     });
+  });
+}
+
+const TAP_MOVE_TOLERANCE = 12;
+
+/**
+ * Activa un control con toque, ratón o teclado sin depender solo de `click`.
+ * En móviles el `click` puede retrasarse o perderse si el dedo se mueve un poco,
+ * así que se acepta `pointerup` siempre que el gesto no haya sido un arrastre.
+ * La bandera `handledByPointer` evita que el `click` posterior repita la acción.
+ */
+export function bindTap(element, handler) {
+  if (!element) return;
+  let startX = 0;
+  let startY = 0;
+  let gestureSeen = false;
+  let handledByPointer = false;
+
+  const run = (event) => {
+    if (!element.isConnected) return;
+    handler(event);
+  };
+
+  element.addEventListener('pointerdown', (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    gestureSeen = true;
+    handledByPointer = false;
+    startX = event.clientX;
+    startY = event.clientY;
+  });
+
+  element.addEventListener('pointerup', (event) => {
+    if (!gestureSeen) return;
+    gestureSeen = false;
+    handledByPointer = true;
+    const moved =
+      Math.abs(event.clientX - startX) > TAP_MOVE_TOLERANCE ||
+      Math.abs(event.clientY - startY) > TAP_MOVE_TOLERANCE;
+    if (moved) return;
+    run(event);
+  });
+
+  element.addEventListener('pointercancel', () => {
+    gestureSeen = false;
+    handledByPointer = true;
+  });
+
+  element.addEventListener('click', (event) => {
+    if (handledByPointer) {
+      handledByPointer = false;
+      return;
+    }
+    run(event);
   });
 }

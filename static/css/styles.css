@@ -276,6 +276,7 @@ img {
 }
 
 .header-action {
+  position: relative;
   width: 36px;
   height: 36px;
   flex: none;
@@ -285,7 +286,15 @@ img {
   background: var(--paper);
   border: 1px solid var(--line);
   color: var(--green-700);
+  touch-action: manipulation;
   transition: transform 0.12s, background 0.15s, color 0.15s;
+}
+
+.header-action::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 16px;
 }
 
 .header-action .icon {
@@ -1824,6 +1833,7 @@ img {
   color: var(--ink);
   background: var(--green-500);
   box-shadow: 0 10px 24px rgba(18, 183, 106, 0.28);
+  touch-action: manipulation;
   transition: transform 0.12s, background 0.15s;
 }
 

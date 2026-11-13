@@ -82,6 +82,8 @@ Cuando un turno termina, la información operativa (pendientes, alertas, novedad
 | D23 | El rol de encargado es por sector, no global | `supportsSupervisor()` en `core/staff.js` habilita las rutas `personal` y `horarios` solo en Salud. Así el módulo se abre desde el panel del sector correcto sin duplicar vistas ni meter reglas en el store. |
 | D24 | La cobertura se calcula, no se declara | `computeShiftSummary()` y `computeAreaDistribution()` son funciones puras sobre `staff[]`: los contadores y las barras siempre reflejan el estado real guardado en `localStorage`. |
 | D25 | Los eventos delegados se enganchan al `.view` interno | `root` sobrevive al re-render del store: engancharle listeners los duplica y cada acción se ejecuta N veces (un toggle se cancelaba solo). El listener vive en el `.view`, que se recrea en cada montaje. |
+| D26 | `bindTap()` en lugar de `click` pelado | El `click` de un toque móvil llega tarde y puede caer sobre un elemento que ya apareció (el scrim del chat), cerrando lo que se acababa de abrir. `bindTap()` actúa en `pointerup`, descarta el `click` posterior y distingue un arrastre de un toque real. |
+| D27 | Un modal cerrado no puede reaparecer | El fallback sin `requestAnimationFrame` de `modal()` respeta el flag `closed` y cancela su timer al cerrar. Sin esa guarda, el overlay cerrado volvía a abrirse 80 ms después y bloqueaba la pantalla completa con `pointer-events: auto`. |
 
 ---
 
@@ -206,6 +208,7 @@ Reglas de navegación:
 - Despliegue en Render: `Procfile` (`web: python app.py`) y `render.yaml` (build `pip install -r requirements.txt`, start `python app.py`, health check `/health`).
 - Si responde "conexión rechazada", el servidor Flask no está corriendo: relanzarlo con `run.ps1`.
 - En móvil el teclado en pantalla reduce el viewport visible; `core/viewport.js` lo refleja en `--vvh` para que el shell y el panel del chat se ajusten. Si el navegador no reporta `visualViewport`, la app cae a `100dvh` y el teclado puede cubrir la parte inferior.
+- En táctil, el `click` de un toque llega tarde: por eso el botón de Soporte y el de asesor usan `bindTap()` y el scrim del chat ignora los 500 ms posteriores a abrirse. Un fallo aquí hace que el chat "se abra y se cierre" en el mismo gesto.
 
 ---
 
@@ -283,4 +286,5 @@ Reglas de navegación:
 | 2026-11-12 | Soporte conectado al asistente: botón “💬 Hablar con un asesor”, correo simulado, `onTalkToAdvisor` por callback, `openAdvisorChat()` con mensaje de asesor y 6 chips de soporte que responden localmente y persisten tras recargar | Equipo HandOff 360 |
 | 2026-11-12 | Fix móvil del chat: `core/viewport.js` publica `--vvh`/`--vv-top`/`--kb-inset`, el shell mide el viewport visible, sin autofocus en táctil, `min-height: 0` en la columna flexible del chat y fallback sin `requestAnimationFrame` en los modales; verificado con eventos táctiles reales a 320/390 px | Equipo HandOff 360 |
 | 2026-11-12 | Gestión de Encargado de Área (Salud): `core/staff.js` con turnos/roles y cálculos puros, `staff[]` en el store, vistas `personal` y `horarios` accesibles desde el panel, cobertura por turno y distribución por área; verificado que el listener delegado va al `.view` interno para no duplicarse al re-render | Equipo HandOff 360 |
+| 2026-11-12 | Fix móvil del soporte: `bindTap()` (pointerup + descarte del click) en el botón de Soporte, el de asesor y las acciones de los modales; el scrim del chat ignora los clics de los primeros 500 ms para que el gesto que abre el asistente no lo cierre; el `reveal()` del overlay respeta el flag `closed`; `--vvh` ignora alturas degeneradas; objetivo táctil de 44 px | Equipo HandOff 360 |
 | 2026-11-12 | Compatibilidad con Render: `app.py` lee `PORT` dinámico y `HOST=0.0.0.0` por defecto, `FLASK_DEBUG` opt-in (el reloader de Werkzeug no es apto en producción), `Procfile` y `render.yaml` con health check `/health` | Equipo HandOff 360 |

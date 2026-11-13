@@ -1,8 +1,11 @@
 const root = document.documentElement;
 
+const MIN_VISIBLE_HEIGHT = 240;
+
 function applyViewportVars() {
   const viewport = window.visualViewport;
-  const visibleHeight = viewport ? viewport.height : window.innerHeight;
+  const rawHeight = viewport ? viewport.height : window.innerHeight;
+  const visibleHeight = rawHeight >= MIN_VISIBLE_HEIGHT ? rawHeight : window.innerHeight;
   const offsetTop = viewport ? viewport.offsetTop : 0;
   const keyboardInset = Math.max(0, window.innerHeight - visibleHeight - offsetTop);
 

@@ -14,6 +14,7 @@ import { mountHistory } from './views/history.view.js';
 import { mountBloc } from './views/bloc.view.js';
 import { initChat, setChatSector, closeChat, openAdvisorChat } from './features/chatbot.js';
 import { openSupport } from './core/support.js';
+import { bindTap } from './core/ui.js';
 import { supportsSupervisor } from './core/staff.js';
 
 const els = {
@@ -61,22 +62,6 @@ function boot() {
 
 function bindShell() {
   els.header.addEventListener('click', (event) => {
-    const support = event.target.closest('[data-support]');
-    if (support) {
-      const route = currentRoute();
-      if (route.name === 'sector') {
-        openSupport(route.sectorId, { onTalkToAdvisor: openAdvisorChat });
-      }
-      return;
-    }
-
-    const bloc = event.target.closest('[data-bloc]');
-    if (bloc) {
-      const route = currentRoute();
-      if (route.name === 'sector') navigate(`/s/${route.sectorId}/bloc`);
-      return;
-    }
-
     if (event.target.closest('[data-back]')) navigate('/');
   });
 
@@ -143,7 +128,7 @@ function renderShell(route) {
   els.nav.hidden = isAccess;
   els.fab.hidden = isAccess;
 
-  renderHeader(sector);
+  renderHeader(sector, route.sectorId);
   if (!isAccess) renderNav(route);
 
   cleanup = VIEW_MAP[route.tab](els.view, {
@@ -170,7 +155,7 @@ function renderSelect() {
   cleanup = mountSelect(els.view) || null;
 }
 
-function renderHeader(sector) {
+function renderHeader(sector, sectorId) {
   const profile = sector.profile;
   const context = profile
     ? `${profile.name} · ${profile.area}`
@@ -197,6 +182,13 @@ function renderHeader(sector) {
       </span>
     </div>
   `;
+
+  const supportBtn = els.header.querySelector('[data-support]');
+  if (supportBtn) {
+    bindTap(supportBtn, () => {
+      openSupport(sectorId, { onTalkToAdvisor: openAdvisorChat });
+    });
+  }
 }
 
 function renderNav(route) {
