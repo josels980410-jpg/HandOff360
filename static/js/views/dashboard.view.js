@@ -3,6 +3,7 @@ import { navigate } from '../core/router.js';
 import { icon } from '../core/icons.js';
 import { openCaseDetail, openReportDetail } from '../core/details.js';
 import { maybeShowCriticalAlert } from '../core/critical.js';
+import { supportsSupervisor } from '../core/staff.js';
 import { clamp, escapeHtml, relativeTime } from '../core/utils.js';
 
 function kpiCard(kpi) {
@@ -142,6 +143,35 @@ export function mountDashboard(root, { sectorId }) {
             : emptyState('Todo en orden', 'No tienes pendientes activos. Registra uno en la entrega de turno.')
         }
       </section>
+
+      ${
+        supportsSupervisor(sectorId)
+          ? `
+        <section class="section">
+          <div class="section-head">
+            <div class="section-title">
+              ${icon('shield')}Gestión de Encargado de Área
+              <span class="count-badge count-badge--dark">${(sector.staff || []).length}</span>
+            </div>
+          </div>
+          <div class="supervisor-grid">
+            <button type="button" class="supervisor-card" data-nav="personal">
+              <span class="supervisor-card__icon">${icon('user')}</span>
+              <strong>Asignación de personal</strong>
+              <span>Registra, asigna y mueve personal por área crítica.</span>
+              ${icon('chevronRight')}
+            </button>
+            <button type="button" class="supervisor-card" data-nav="horarios">
+              <span class="supervisor-card__icon">${icon('clock')}</span>
+              <strong>Tablero de turnos</strong>
+              <span>Cobertura, activos y faltas por turno en vivo.</span>
+              ${icon('chevronRight')}
+            </button>
+          </div>
+        </section>
+      `
+          : ''
+      }
 
       ${
         sector.lastClose

@@ -1,6 +1,6 @@
 import { SECTOR_MAP } from '../data/seed.js';
 
-export const TABS = ['acceso', 'panel', 'kpis', 'turno', 'historial', 'bloc'];
+export const TABS = ['acceso', 'panel', 'kpis', 'turno', 'historial', 'bloc', 'personal', 'horarios'];
 
 export function currentRoute() {
   const raw = window.location.hash.replace(/^#\/?/, '');
@@ -17,6 +17,7 @@ export function currentRoute() {
       query: {
         q: params.get('q') || '',
         f: params.get('f') || '',
+        shift: params.get('shift') || '',
       },
     };
   }

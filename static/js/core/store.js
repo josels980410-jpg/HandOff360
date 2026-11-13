@@ -1,4 +1,5 @@
 import { SECTOR_IDS, SECTOR_MAP, createSectorSeed } from '../data/seed.js';
+import { SHIFT_IDS, STAFF_ROLES, getShift } from './staff.js';
 import { uid } from './utils.js';
 
 const STORAGE_KEY = 'handoff360:v1';
@@ -90,6 +91,7 @@ export function initStore() {
     sector.profile = normalizeProfile(sector.profile, sector);
     sector.chat = Array.isArray(sector.chat) ? sector.chat : [];
     sector.notes = Array.isArray(sector.notes) ? sector.notes : [];
+    sector.staff = Array.isArray(sector.staff) ? sector.staff : [];
     sector.supportTickets = Array.isArray(sector.supportTickets) ? sector.supportTickets : [];
     sector.reports = Array.isArray(sector.reports) ? sector.reports : [];
     sector.pendings = Array.isArray(sector.pendings) ? sector.pendings : [];
@@ -320,8 +322,71 @@ export function addSupportTicket(id, { category = '', message = '', contact = ''
   return ticket;
 }
 
-export function addPending(id, text, priority = 'media') {
-  const clean = String(text ?? '').trim().slice(0, 180);
+export function addStaffMember(id, { name, role, area, shift, active = true } = {}) {
+  const sector = getSector(id);
+  if (!sector) return null;
+  const cleanName = String(name ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (!cleanName) return null;
+  const cleanArea = String(area ?? '').trim().slice(0, 60);
+  const cleanShift = SHIFT_IDS.includes(shift) ? shift : 'matutino';
+  const member = {
+    id: uid('stf'),
+    name: cleanName,
+    role: STAFF_ROLES.includes(role) ? role : 'Enfermería',
+    area: cleanArea,
+    shift: cleanShift,
+    active: active !== false,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+  sector.staff.unshift(member);
+  addLogEntry(
+    sector,
+    'inicio',
+    `Personal asignado: ${cleanName} · ${cleanArea || 'sin área'} · ${getShift(cleanShift).label}`
+  );
+  persist(true);
+  return member;
+}
+
+export function updateStaffMember(id, staffId, patch = {}) {
+  const sector = getSector(id);
+  if (!sector) return null;
+  const member = sector.staff.find((item) => item.id === staffId);
+  if (!member) return null;
+
+  if (patch.name !== undefined) {
+    const cleanName = String(patch.name).trim().replace(/\s+/g, ' ').slice(0, 60);
+    if (cleanName) member.name = cleanName;
+  }
+  if (patch.role !== undefined && STAFF_ROLES.includes(patch.role)) {
+    member.role = patch.role;
+  }
+  if (patch.area !== undefined) {
+    member.area = String(patch.area).trim().slice(0, 60);
+  }
+  if (patch.shift !== undefined && SHIFT_IDS.includes(patch.shift)) {
+    member.shift = patch.shift;
+  }
+  if (patch.active !== undefined) {
+    member.active = Boolean(patch.active);
+  }
+  member.updatedAt = nowIso();
+  persist(true);
+  return member;
+}
+
+export function removeStaffMember(id, staffId) {
+  const sector = getSector(id);
+  if (!sector) return;
+  const member = sector.staff.find((item) => item.id === staffId);
+  if (!member) return;
+  sector.staff = sector.staff.filter((item) => item.id !== staffId);
+  addLogEntry(sector, 'inicio', `Personal dado de baja: ${member.name}`);
+  persist(true);
+}
+
+export function addPending(id, text, priority = 'media') {  const clean = String(text ?? '').trim().slice(0, 180);
   if (!clean) return null;
   const normalizedPriority = ['alta', 'media', 'baja'].includes(priority) ? priority : 'media';
   let created = null;

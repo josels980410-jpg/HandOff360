@@ -40,6 +40,7 @@ HandOff360/
         │   ├── router.js   # Rutas por hash (select/acceso/salud/logistica/retail + tabs)
         │   ├── search.js   # Búsqueda pura de reportes y casos por nombre o ID
         │   ├── metrics.js  # Cálculo puro de KPIs del sector (resolución, críticas, cierre)
+        │   ├── staff.js    # Turnos, roles y cálculos puros de cobertura de personal
         │   ├── viewport.js # Variables CSS del viewport visible y del teclado en pantalla
         │   ├── ui.js       # Toasts, modales, confirmaciones, utilidades DOM
         │   ├── icons.js    # Set de íconos SVG inline (sin librerías)
@@ -52,6 +53,8 @@ HandOff360/
         │   ├── access.view.js      # Identificación obligatoria de turno
         │   ├── dashboard.view.js   # Panel del turno
         │   ├── kpis.view.js        # KPIs y métricas operativas
+        │   ├── staff.view.js       # Encargado de área: asignación de personal
+        │   ├── shifts.view.js      # Encargado de área: tablero de turnos y estatus
         │   ├── handover.view.js    # Entrega de turno / cerrar turno
         │   ├── bloc.view.js        # Bloc Offline: notas rápidas sin internet
         │   └── history.view.js     # Historial y buscador
@@ -70,6 +73,7 @@ HandOff360/
 | `core/router.js` | Rutas por hash. Nunca recargar la página. |
 | `core/search.js` | Funciones puras de búsqueda. No conoce el DOM ni el store. |
 | `core/metrics.js` | Cálculo puro de los KPIs del sector a partir del estado. No muta nada ni conoce el DOM. |
+| `core/staff.js` | Dominio de personal: turnos, roles, sectores con rol de encargado y cálculos puros de cobertura y distribución. No conoce el DOM ni el store. |
 | `core/viewport.js` | Publica `--vvh`, `--vv-top` y `--kb-inset` desde `visualViewport` para que el shell y el chat se ajusten al área realmente visible con el teclado abierto. |
 | `core/ui.js` | Componentes transversales. No importa vistas ni store. |
 | `core/details.js` | Abre modales de detalle de caso y reporte. El caso permite registrar una resolución local y eliminar la alerta activa asociada. |
@@ -78,6 +82,8 @@ HandOff360/
 | `views/*` | Renderizan y manejan sus eventos. Pueden llamar al store y al router. |
 | `views/access.view.js` | Captura nombre y área del operador; valida y llama a `setProfile`. No es autenticación. |
 | `views/kpis.view.js` | Presenta los 4 KPIs calculados por `core/metrics.js`. No calcula métricas ni escribe en el store. |
+| `views/staff.view.js` | Asignación de personal por área: alta, movimiento de área/turno, alta/baja y estado en puesto. |
+| `views/shifts.view.js` | Tablero de turnos: cobertura por turno, contadores y distribución de personal por área. |
 | `views/bloc.view.js` | Bloc Offline: captura notas (texto o voz), las lista y permite convertirlas o borrarlas. |
 | `features/chatbot.js` | Lógica de lenguaje natural local. Puede mutar el store y navegar. Expone `openAdvisorChat()` para la entrada de Soporte Técnico. |
 | `features/voice.js` | Solo Web Speech API. No conoce el negocio. |
@@ -104,6 +110,7 @@ HandOff360/
       "alerts": [],
       "pendings": [],
       "notes": [],
+      "staff": [],
       "supportTickets": [],
       "log": [],
       "cases": [],
@@ -130,6 +137,7 @@ HandOff360/
 - `notes` es el Bloc Offline: `addNote(id, text)`, `deleteNote(id, noteId)` y `convertNotesToPendings(id, noteIds)` son las únicas vías. Una nota convertida queda marcada con `converted: true` y `convertedAt` para no duplicar pendientes.
 - `convertNotesToPendings()` crea pendientes de prioridad `media` y registra una sola entrada de bitácora por conversión.
 - `supportTickets` guarda los reportes de fallas enviados desde el modal de Soporte: `addSupportTicket(id, { category, message, contact })` es la única vía.
+- `staff` es la plantilla del Encargado de Área: `addStaffMember(id, { name, role, area, shift })`, `updateStaffMember(id, staffId, patch)` y `removeStaffMember(id, staffId)` son las únicas vías. Cada persona tiene `shift` (`matutino`/`vespertino`/`nocturno`), `area` y `active` (si está en puesto o falta).
 - La resolución es local: no modifica reportes históricos ni sincroniza con otros dispositivos.
 - Al cargar datos antiguos, `initStore()` normaliza `meta.areas` y descarta perfiles con área inválida; no se cambia la versión de almacenamiento.
 - Nunca se sincronizan datos entre navegadores ni dispositivos. Es una limitación consciente (demo local).
@@ -151,12 +159,15 @@ Vista/evento → store.action() → state en memoria → localStorage → emit �
   - `#/s/<sectorId>/acceso` → identificación obligatoria de turno.
   - `#/s/<sectorId>/panel` → dashboard.
   - `#/s/<sectorId>/kpis` → KPIs y métricas operativas.
+  - `#/s/<sectorId>/personal` → Encargado de área: asignación de personal (solo Salud).
+  - `#/s/<sectorId>/horarios` → Encargado de área: tablero de turnos (solo Salud, acepta `?shift=<turno>`).
   - `#/s/<sectorId>/bloc` → Bloc Offline (notas rápidas sin internet).
   - `#/s/<sectorId>/turno` → entrega de turno.
   - `#/s/<sectorId>/historial` → historial (acepta `?q=<texto>&f=<todo|reportes|casos>`).
 - `<sectorId>` ∈ `salud`, `logistica`, `retail`. Cualquier valor distinto redirige a `#/`.
 - Al tocar un sector se navega siempre a `acceso`, incluso si ya existe un perfil (permite confirmarlo o cambiarlo).
 - Si se intenta entrar a `panel`, `kpis`, `bloc`, `turno` o `historial` sin perfil activo, `app.js` redirige a `acceso`.
+- `personal` y `horarios` son rutas exclusivas de los sectores con rol de encargado (`supportsSupervisor()` en `core/staff.js`). En cualquier otro sector, `app.js` redirige a `panel`.
 - El botón "Volver a Sectores" siempre navega a `#/`.
 - El router nunca recarga la página.
 
@@ -176,6 +187,9 @@ Vista/evento → store.action() → state en memoria → localStorage → emit �
 - El chatbot expone el Bloc Offline: la sugerencia “Bloc Offline” lista las notas y la acción “Convertir a pendientes” crea los pendientes oficiales.
 - En pantallas táctiles el chat **no hace autofocus** al abrirse: el teclado en pantalla taparía el panel y dejaría los chips de soporte fuera de alcance. El foco se da solo cuando el operador toca el campo.
 - El panel del chat y el shell se dimensionan con `--vvh` (viewport visible), no con `100dvh`, para que el teclado en pantalla no los empuje fuera de la pantalla.
+- El panel de Salud expone **Gestión de Encargado de Área** con dos accesos: *Asignación de personal* (`personal`) y *Tablero de turnos* (`horarios`). Solo aparece en sectores con `supportsSupervisor()`.
+- `staff.view.js` agrupa al personal por área y ofrece mover (modal de área/turno), marcar falta/en puesto y dar de baja (con confirmación). `shifts.view.js` muestra los tres turnos con cobertura, contadores y distribución por área; el turno seleccionado viaja en `?shift=`.
+- Las vistas con eventos delegados se enganchan al **`.view` interno**, nunca a `root`: `root` sobrevive al re-render y acumularía listeners, ejecutando la acción N veces.
 
 ### 3.5 Modales y toasts
 
@@ -317,7 +331,9 @@ $env:HOST = "0.0.0.0"
 15. El botón “💬 Hablar con un asesor” abre el asistente con el mensaje de asesor y los 6 chips de soporte; cada chip responde con una solución local y el estado persiste tras recargar.
 16. En móvil (puntero táctil) el chat se abre **sin teclado en pantalla**, los 6 chips quedan visibles y alcanzables con el dedo, y siguen siendo tocables con el teclado abierto tras hacer scroll.
 17. El Bloc Offline permite escribir y dictar notas, listarlas y convertirlas en pendientes oficiales tanto desde la vista como desde el chatbot; las notas persisten tras recargar.
-18. La app funciona sin conexión (todo está en `localStorage`).
+18. En Salud, el panel ofrece **Gestión de Encargado de Área**: se registra personal, se marca falta/en puesto, se mueve de área y de turno, y todo persiste tras recargar.
+19. El tablero de turnos muestra los tres turnos con cobertura, personal total, en puesto y faltas, más la distribución por área; en otros sectores esas rutas redirigen al panel.
+20. La app funciona sin conexión (todo está en `localStorage`).
 
 ---
 

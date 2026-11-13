@@ -32,6 +32,7 @@ Cuando un turno termina, la información operativa (pendientes, alertas, novedad
 - **Modal crítico obligatorio al entrar al panel**: muestra la alerta más urgente del sector, caso/ID y tiempo transcurrido; fondo negro, detalles verdes y texto blanco; al cerrarlo se habilita la navegación.
 - **Dashboard**: hero con indicador principal, KPIs, alertas críticas, pendientes activos, último cierre.
 - **KPIs y métricas operativas**: pestaña propia con tasa de resolución de turno, alertas críticas atendidas, distribución de pendientes por prioridad y tiempo promedio de cierre, todo calculado desde `localStorage`.
+- **Gestión de Encargado de Área (Salud)**: dos pantallas accesibles desde el panel para registrar, asignar y mover personal por área crítica, y para controlar la cobertura de los turnos Matutino, Vespertino y Nocturno.
 - **Entrega de turno**: resumen y pendientes con dictado por voz; el pendiente dictado se integra al campo, se guarda con prioridad (alta/media/baja) y el cierre genera reporte y actualiza bitácora.
 - **Soporte Técnico**: acceso directo en el header de cada sector; modal con FAQ operativas, reporte de fallas guardado localmente, contacto 24/7 simulado y botón “💬 Hablar con un asesor” que abre el asistente con 6 chips de soporte.- **Bloc Offline**: pestaña propia para escribir o dictar notas rápidas sin internet, guardadas en `localStorage` y convertibles en pendientes oficiales.
 - **Historial y buscador**: reportes de turno y casos del sector; búsqueda por nombre o ID; detalle con línea de tiempo.
@@ -78,6 +79,9 @@ Cuando un turno termina, la información operativa (pendientes, alertas, novedad
 | D20 | Chips de soporte embebidos en el mensaje | Los 6 atajos viven dentro del mensaje de asesor (`.msg-chips`) y no en la barra de sugerencias, para que el orden contextual sea el que guíe al usuario y no una lista global. |
 | D21 | El shell mide el viewport visible, no el de layout | `core/viewport.js` publica `--vvh`/`--vv-top`/`--kb-inset` desde `visualViewport`. Con `100dvh` el teclado en pantalla dejaba el panel del chat anclado fuera de la vista y los chips quedaban inalcanzables en iOS. |
 | D22 | El chat no roba el foco en táctil | Abrir el asistente con `focus: false` evita que el teclado tape los 6 chips de soporte; el operador toca el campo cuando quiere escribir. En escritorio se mantiene el autofocus por comodidad. |
+| D23 | El rol de encargado es por sector, no global | `supportsSupervisor()` en `core/staff.js` habilita las rutas `personal` y `horarios` solo en Salud. Así el módulo se abre desde el panel del sector correcto sin duplicar vistas ni meter reglas en el store. |
+| D24 | La cobertura se calcula, no se declara | `computeShiftSummary()` y `computeAreaDistribution()` son funciones puras sobre `staff[]`: los contadores y las barras siempre reflejan el estado real guardado en `localStorage`. |
+| D25 | Los eventos delegados se enganchan al `.view` interno | `root` sobrevive al re-render del store: engancharle listeners los duplica y cada acción se ejecuta N veces (un toggle se cancelaba solo). El listener vive en el `.view`, que se recrea en cada montaje. |
 
 ---
 
@@ -105,6 +109,7 @@ Cuando un turno termina, la información operativa (pendientes, alertas, novedad
       "alerts": [{ "id": "AL-01", "severity": "critical", "title": "...", "detail": "...", "time": "hace 18 min", "caseId": "PAC-1042" }],
       "pendings": [{ "id": "pd-1", "text": "...", "priority": "alta", "done": false, "createdAt": "...", "doneAt": "..." }],
       "notes": [{ "id": "note-1", "text": "...", "createdAt": "...", "updatedAt": "...", "converted": false, "convertedAt": "..." }],
+      "staff": [{ "id": "stf-1", "name": "Enf. Lucía Paz", "role": "Enfermería", "area": "Urgencias", "shift": "matutino", "active": true, "createdAt": "...", "updatedAt": "..." }],
       "supportTickets": [{ "id": "sup-1", "category": "Dictado por voz", "message": "...", "contact": "...", "createdAt": "..." }],
       "log": [{ "id": "log-1", "type": "inicio|cierre|pendiente|alerta", "text": "...", "at": "..." }],
       "cases": [{ "id": "PAC-1042", "name": "María González", "status": "Observación UCI", "statusTone": "critical", "location": "Cama 214", "owner": "Enf. Lucia Paz", "detail": "...", "updatedAt": "...", "timeline": [{ "time": "08:00", "text": "..." }], "resolution": { "note": "Traslado confirmado a UCI central.", "at": "...", "by": "Elena Ríos", "area": "Urgencias", "severity": "critical", "responseMs": 1080000 } }],
@@ -130,6 +135,7 @@ Cuando un turno termina, la información operativa (pendientes, alertas, novedad
 - `cases` no se modifican por el cierre (son el censo/registro del sector), salvo la resolución explícita desde el detalle.
 - `resolveCaseAlert(id, caseId, note)` valida la nota, guarda `resolution` en el caso, marca `status: "Resuelto"` y `statusTone: "done"`, actualiza `updatedAt`, agrega una entrada a `timeline`, elimina las alertas activas con ese `caseId` y registra la bitácora. La resolución guarda `severity` y `responseMs` para alimentar los KPIs.
 - `notes` es el Bloc Offline: se agrega con `addNote`, se borra con `deleteNote` y se convierte con `convertNotesToPendings(id, noteIds)`. Al convertir, la nota queda marcada `converted: true` y el pendiente nasce con prioridad `media`.
+- `staff` es la plantilla del Encargado de Área: `addStaffMember`, `updateStaffMember` y `removeStaffMember` son las únicas vías. `shift` ∈ `matutino|vespertino|nocturno`, `role` ∈ `Enfermería|Medicina|Apoyo|Administrativo` y `active` indica si la persona está en puesto o falta.
 - `supportTickets` guarda los reportes de fallas del modal de Soporte mediante `addSupportTicket(id, { category, message, contact })`.
 - `togglePending()` guarda `doneAt` cuando se marca como atendido y lo borra al revertirlo; alimenta el tiempo promedio de cierre.
 - `chat` se conserva por sector y se recorta a los últimos 60 mensajes.
@@ -152,6 +158,10 @@ Cuando un turno termina, la información operativa (pendientes, alertas, novedad
   │
   ├── #/s/<sector>/kpis        KPIs y métricas → tasa, críticas, prioridad, tiempo
   │
+  ├── #/s/salud/personal       Encargado de área → asignar y mover personal por área
+  │
+  ├── #/s/salud/horarios       Encargado de área → tablero de turnos y cobertura
+  │
   ├── #/s/<sector>/bloc        Bloc Offline → notas sin internet → pendientes
   │
   ├── #/s/<sector>/turno       Entrega → Cerrar turno → Reporte en historial
@@ -167,6 +177,7 @@ Reglas de navegación:
 
 - Tocar un sector desde `#/` siempre abre `acceso`; si ya hay perfil, el formulario aparece precargado para confirmar o cambiar.
 - Si se intenta abrir `panel`, `kpis`, `bloc`, `turno` o `historial` sin perfil, se redirige a `acceso`.
+- `personal` y `horarios` solo existen en Salud (`supportsSupervisor()`); en otro sector redirigen al panel.
 - El botón "Volver a Sectores" está siempre en el header del sector y navega a `#/`.
 - Cualquier `sectorId` inválido normaliza el hash a `#/` y muestra la selección de sector.
 - La nav inferior tiene 5 pestañas: **Panel**, **KPIs**, **Entrega**, **Bloc**, **Historial**. En `acceso` se ocultan nav, FAB y chat.
@@ -213,8 +224,9 @@ Reglas de navegación:
 11. Tocar el FAB del asistente → elegir **Bloc Offline** → **Convertir a pendientes** → el pendiente aparece en Entrega.
 12. Tocar el botón **?** del header → abrir **Soporte Técnico**, expandir una FAQ y enviar un reporte de falla.
 13. En el mismo modal, tocar **💬 Hablar con un asesor** → se abre el asistente con el mensaje de asesor y los 6 chips de soporte; tocar cualquiera y ver la respuesta local.
-14. Ver el reporte generado en **Historial** → buscar `PAC-1042`, `María` o `Urgencias`.
-15. Volver a Sectores → el perfil activo aparece bajo el sector; probar con los otros 2 sectores y confirmar que cada uno muestra su alerta crítica y sus KPIs.
+14. En el panel de **Salud**, abrir **Gestión de Encargado de Área** → *Asignación de personal*: registrar a alguien, moverlo de área con el modal y marcarlo como falta → luego *Tablero de turnos*: ver cobertura Matutino/Vespertino/Nocturno y la distribución por área.
+15. Ver el reporte generado en **Historial** → buscar `PAC-1042`, `María` o `Urgencias`.
+16. Volver a Sectores → el perfil activo aparece bajo el sector; probar con los otros 2 sectores y confirmar que cada uno muestra su alerta crítica y sus KPIs.
 
 ---
 
@@ -270,4 +282,5 @@ Reglas de navegación:
 | 2026-11-12 | Header adaptativo con container queries: 5 pestañas sin truncar, indicador de turno colapsado a punto, FAB y toasts reposicionados para no tapar acciones; verificación E2E de KPIs/Soporte/Bloc en los 3 sectores con 0 eventos de consola | Equipo HandOff 360 |
 | 2026-11-12 | Soporte conectado al asistente: botón “💬 Hablar con un asesor”, correo simulado, `onTalkToAdvisor` por callback, `openAdvisorChat()` con mensaje de asesor y 6 chips de soporte que responden localmente y persisten tras recargar | Equipo HandOff 360 |
 | 2026-11-12 | Fix móvil del chat: `core/viewport.js` publica `--vvh`/`--vv-top`/`--kb-inset`, el shell mide el viewport visible, sin autofocus en táctil, `min-height: 0` en la columna flexible del chat y fallback sin `requestAnimationFrame` en los modales; verificado con eventos táctiles reales a 320/390 px | Equipo HandOff 360 |
+| 2026-11-12 | Gestión de Encargado de Área (Salud): `core/staff.js` con turnos/roles y cálculos puros, `staff[]` en el store, vistas `personal` y `horarios` accesibles desde el panel, cobertura por turno y distribución por área; verificado que el listener delegado va al `.view` interno para no duplicarse al re-render | Equipo HandOff 360 |
 | 2026-11-12 | Compatibilidad con Render: `app.py` lee `PORT` dinámico y `HOST=0.0.0.0` por defecto, `FLASK_DEBUG` opt-in (el reloader de Werkzeug no es apto en producción), `Procfile` y `render.yaml` con health check `/health` | Equipo HandOff 360 |

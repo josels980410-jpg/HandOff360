@@ -7,11 +7,14 @@ import { mountSelect } from './views/select.view.js';
 import { mountAccess } from './views/access.view.js';
 import { mountDashboard } from './views/dashboard.view.js';
 import { mountKpis } from './views/kpis.view.js';
+import { mountStaff } from './views/staff.view.js';
+import { mountShifts } from './views/shifts.view.js';
 import { mountHandover } from './views/handover.view.js';
 import { mountHistory } from './views/history.view.js';
 import { mountBloc } from './views/bloc.view.js';
 import { initChat, setChatSector, closeChat, openAdvisorChat } from './features/chatbot.js';
 import { openSupport } from './core/support.js';
+import { supportsSupervisor } from './core/staff.js';
 
 const els = {
   header: document.getElementById('appHeader'),
@@ -33,6 +36,8 @@ const VIEW_MAP = {
   acceso: mountAccess,
   panel: mountDashboard,
   kpis: mountKpis,
+  personal: mountStaff,
+  horarios: mountShifts,
   turno: mountHandover,
   historial: mountHistory,
   bloc: mountBloc,
@@ -96,6 +101,11 @@ function render({ preserveScroll = false } = {}) {
     const sector = getSector(route.sectorId);
     if (sector && route.tab !== 'acceso' && !sector.profile) {
       navigate(`/s/${route.sectorId}/acceso`);
+      return;
+    }
+    const supervisorTabs = ['personal', 'horarios'];
+    if (sector && supervisorTabs.includes(route.tab) && !supportsSupervisor(route.sectorId)) {
+      navigate(`/s/${route.sectorId}/panel`);
       return;
     }
   }
