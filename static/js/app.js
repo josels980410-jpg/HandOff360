@@ -13,8 +13,7 @@ import { mountHandover } from './views/handover.view.js';
 import { mountHistory } from './views/history.view.js';
 import { mountBloc } from './views/bloc.view.js';
 import { initChat, setChatSector, closeChat, openAdvisorChat } from './features/chatbot.js';
-import { openSupport } from './core/support.js';
-import { bindTap } from './core/ui.js';
+import { initSupport } from './core/support.js';
 import { supportsSupervisor } from './core/staff.js';
 
 const els = {
@@ -51,6 +50,19 @@ function boot() {
   initStore();
   initViewport();
   initChat({ fab: els.fab, container: els.chatRoot });
+  initSupport({ onTalkToAdvisor: openAdvisorChat });
+
+
+  if (els.fab) {
+    els.fab.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof openAdvisorChat === 'function') {
+        openAdvisorChat();
+      }
+    };
+  }
+
   bindShell();
   subscribe(() => render({ preserveScroll: true }));
   onRouteChange(() => render());
@@ -128,7 +140,7 @@ function renderShell(route) {
   els.nav.hidden = isAccess;
   els.fab.hidden = isAccess;
 
-  renderHeader(sector, route.sectorId);
+  renderHeader(sector);
   if (!isAccess) renderNav(route);
 
   cleanup = VIEW_MAP[route.tab](els.view, {
@@ -155,39 +167,26 @@ function renderSelect() {
   cleanup = mountSelect(els.view) || null;
 }
 
-function renderHeader(sector, sectorId) {
+function renderHeader(sector) {
   const profile = sector.profile;
   const context = profile
     ? `${profile.name} · ${profile.area}`
     : sector.meta.area;
-  els.header.innerHTML = `
-    <div class="header-row">
-      <button type="button" class="header-back" data-back aria-label="Volver a sectores">
-        ${icon('chevronLeft')}
-      </button>
-      <div class="header-sector">
-        <span class="header-emoji">${sector.meta.emoji}</span>
-        <div class="header-copy">
-          <strong>${escapeHtml(sector.meta.short)}</strong>
-          <small>${escapeHtml(context)}</small>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button class="header-action" type="button" data-support aria-label="Soporte técnico" title="Soporte técnico">
-          ${icon('help')}
-        </button>
-      </div>
-      <span class="header-shift" title="${escapeHtml(sector.meta.shiftLabel)}" aria-label="Turno ${escapeHtml(sector.meta.shiftLabel)}">
-        <span class="live-dot"></span><span class="header-shift__label">${escapeHtml(sector.meta.shiftLabel)}</span>
-      </span>
-    </div>
-  `;
+  const header = els.header;
 
-  const supportBtn = els.header.querySelector('[data-support]');
-  if (supportBtn) {
-    bindTap(supportBtn, () => {
-      openSupport(sectorId, { onTalkToAdvisor: openAdvisorChat });
-    });
+  const emoji = header.querySelector('[data-sector-emoji]');
+  const name = header.querySelector('[data-sector-name]');
+  const sectorContext = header.querySelector('[data-sector-context]');
+  const shiftLabel = header.querySelector('[data-shift-label]');
+  const shiftWrap = header.querySelector('[data-shift-wrap]');
+
+  if (emoji) emoji.textContent = sector.meta.emoji;
+  if (name) name.textContent = sector.meta.short;
+  if (sectorContext) sectorContext.textContent = context;
+  if (shiftLabel) shiftLabel.textContent = sector.meta.shiftLabel;
+  if (shiftWrap) {
+    shiftWrap.title = sector.meta.shiftLabel;
+    shiftWrap.setAttribute('aria-label', `Turno ${sector.meta.shiftLabel}`);
   }
 }
 
