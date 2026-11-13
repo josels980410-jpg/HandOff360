@@ -63,7 +63,7 @@ HandOff360/
 
 | Capa | Regla |
 |---|---|
-| `app.py` | Solo sirve archivos estáticos y `/health`. No contiene lógica de negocio. |
+| `app.py` | Solo sirve archivos estáticos y `/health`. No contiene lógica de negocio. Debe respetar `PORT`/`HOST` de Render. |
 | `data/seed.js` | Datos simulados de demostración. No puede importar nada del núcleo. |
 | `core/store.js` | Único punto de acceso a `localStorage`. Toda mutación pasa por aquí, incluido el perfil local de turno. |
 | `core/router.js` | Rutas por hash. Nunca recargar la página. |
@@ -289,7 +289,7 @@ $env:HOST = "0.0.0.0"
 ```
 
 - La app queda en `http://127.0.0.1:5000`.
-- `app.py` lee `HOST` (por defecto `127.0.0.1`) y `PORT` (por defecto `5000`) del entorno. Con `HOST=0.0.0.0` escucha en todas las interfaces.
+- `app.py` lee `PORT` (por defecto `5000`), `HOST` (por defecto `0.0.0.0`) y `FLASK_DEBUG` (por defecto `0`) del entorno. Con `HOST=0.0.0.0` —el valor por defecto— escucha en todas las interfaces, requisito de Render.
 - Para usarla como celular: abrir la URL desde el teléfono en la misma red cambiando `127.0.0.1` por la IP local (`http://<IP-local>:5000`), o usar las herramientas de dispositivo de Chrome/Firefox.
 - Si la URL responde "conexión rechazada", el servidor no está corriendo: relanzarlo con `run.ps1` o con el comando manual de arriba.
 

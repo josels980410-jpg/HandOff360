@@ -92,16 +92,41 @@ Comprobación de estado: `http://127.0.0.1:5000/health` → `{"status":"ok", ...
 
 ### Usarlo desde el celular
 
-El servidor escucha solo en loopback por defecto. Para abrirlo desde un teléfono en la misma red WiFi:
+El servidor escucha en `0.0.0.0` por defecto, así que ya es accesible desde otros dispositivos de la red. Para abrirlo desde un teléfono en la misma red WiFi, usa la IP local de tu PC:
 
 ```powershell
-$env:HOST = "0.0.0.0"
 python app.py
 ```
 
 Luego abre en el navegador del teléfono `http://<IP-local-de-tu-PC>:5000`.
 
 > Si la URL responde **“conexión rechazada”**, el servidor no está corriendo: relánzalo con `run.ps1` o con el comando manual.
+
+---
+
+## Despliegue en Render
+
+El repositorio incluye `Procfile` y `render.yaml`, así que el despliegue es directo desde GitHub.
+
+**Opción A — Blueprint (recomendada).** Render lee `render.yaml` automáticamente: ve a **New → Blueprint**, selecciona el repositorio y acepta la configuración.
+
+**Opción B — Manual.** En **New → Web Service**, conecta el repositorio y usa:
+
+| Campo | Valor |
+|---|---|
+| Runtime | Python |
+| Build command | `pip install -r requirements.txt` |
+| Start command | `python app.py` |
+| Health check path | `/health` |
+
+`app.py` toma el puerto de la variable de entorno `PORT` que Render asigna automáticamente, y escucha en `0.0.0.0` para que el tráfico externo llegue al contenedor:
+
+```python
+port = int(os.environ.get("PORT", 5000))
+app.run(host="0.0.0.0", port=port)
+```
+
+No hace falta configurar nada a mano: Render detecta `Procfile`, `render.yaml` y `requirements.txt` por su cuenta.
 
 ---
 
@@ -123,6 +148,8 @@ HandOff360/
 ├── app.py                  # Servidor local Flask (solo sirve el frontend)
 ├── requirements.txt        # Única dependencia: Flask
 ├── run.ps1                 # Arranque: venv + pip + app
+├── Procfile                # web: python app.py  (despliegue en Render)
+├── render.yaml             # Blueprint de Render (plan gratuito)
 ├── AGENTS.md               # Constitución del proyecto (reglas y arquitectura)
 ├── MEMORY.md               # Memoria viva: decisiones, esquema y bitácora
 ├── .venv/                  # Entorno virtual (ignorado en git)

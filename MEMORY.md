@@ -190,7 +190,8 @@ Reglas de navegación:
 - URL: `http://127.0.0.1:5000`
 - Health check: `http://127.0.0.1:5000/health`
 - Para emular móvil: Chrome DevTools → Device Toolbar → iPhone 12/13 (390×844).
-- Para ver en el teléfono: `$env:HOST = "0.0.0.0"` y `.\.venv\Scripts\python.exe app.py`, luego abrir `http://<IP-local>:5000`. `app.py` lee `HOST` y `PORT` del entorno.
+- Para ver en el teléfono: `python app.py` y abrir `http://<IP-local>:5000`. `app.py` lee `PORT` (por defecto 5000), `HOST` (por defecto `0.0.0.0`) y `FLASK_DEBUG` (por defecto 0) del entorno.
+- Despliegue en Render: `Procfile` (`web: python app.py`) y `render.yaml` (build `pip install -r requirements.txt`, start `python app.py`, health check `/health`).
 - Si responde "conexión rechazada", el servidor Flask no está corriendo: relanzarlo con `run.ps1`.
 
 ---
@@ -266,3 +267,4 @@ Reglas de navegación:
 | 2026-11-12 | Bloc Offline: pestaña `bloc`, notas persistidas en `notes[]` con escritura y dictado, borrado con confirmación y conversión a pendientes oficiales; el chatbot local lee y convierte notas desde el chat | Equipo HandOff 360 |
 | 2026-11-12 | Header adaptativo con container queries: 5 pestañas sin truncar, indicador de turno colapsado a punto, FAB y toasts reposicionados para no tapar acciones; verificación E2E de KPIs/Soporte/Bloc en los 3 sectores con 0 eventos de consola | Equipo HandOff 360 |
 | 2026-11-12 | Soporte conectado al asistente: botón “💬 Hablar con un asesor”, correo simulado, `onTalkToAdvisor` por callback, `openAdvisorChat()` con mensaje de asesor y 6 chips de soporte que responden localmente y persisten tras recargar | Equipo HandOff 360 |
+| 2026-11-12 | Compatibilidad con Render: `app.py` lee `PORT` dinámico y `HOST=0.0.0.0` por defecto, `FLASK_DEBUG` opt-in (el reloader de Werkzeug no es apto en producción), `Procfile` y `render.yaml` con health check `/health` | Equipo HandOff 360 |
