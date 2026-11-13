@@ -49,7 +49,7 @@ Una pestaña propia con cuatro indicadores calculados en vivo desde el estado lo
 Las métricas se recalculan solas al resolver una alerta, completar un pendiente o cerrar el turno.
 
 ### Soporte interactivo con chatbot local
-Un modal de **Soporte Técnico** (FAQ operativas, reporte de fallas guardado localmente y contacto 24/7 simulado) conectado directamente con el asistente. El botón **“💬 Hablar con un asesor”** abre el chatbot con un mensaje de bienvenida y **6 opciones rápidas** —cierre de turno, dictado por voz, sincronización y `localStorage`, censo y áreas, cambio de perfil y asesoría— que responden con soluciones orientativas de la propia app, sin ninguna llamada a internet.
+Un panel de **Soporte Técnico** (FAQ operativas, reporte de fallas guardado localmente y contacto 24/7 simulado) conectado directamente con el asistente. El botón **“💬 Hablar con un asesor”** abre el chatbot con un mensaje de bienvenida y **6 opciones rápidas** —cierre de turno, dictado por voz, sincronización y `localStorage`, censo y áreas, cambio de perfil y asesoría— que responden con soluciones orientativas de la propia app, sin ninguna llamada a internet.
 
 El asistente (chatbot local, sin API externa) también entiende lenguaje natural para dar resúmenes, listar pendientes y alertas, buscar casos, preparar y cerrar el turno, y convertir notas offline en pendientes.
 

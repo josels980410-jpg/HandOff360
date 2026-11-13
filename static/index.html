@@ -14,7 +14,37 @@
 </head>
 <body>
   <div id="app" class="app-shell">
-    <header id="appHeader" class="app-header" hidden></header>
+    <header id="appHeader" class="app-header" hidden>
+      <div class="header-row">
+        <button type="button" class="header-back" data-back aria-label="Volver a sectores">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 5-7 7 7 7"></path></svg>
+        </button>
+        <div class="header-sector">
+          <span class="header-emoji" data-sector-emoji>🏥</span>
+          <div class="header-copy">
+            <strong data-sector-name>Turno</strong>
+            <small data-sector-context>Identifícate para continuar</small>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button
+            type="button"
+            class="header-action"
+            id="supportTrigger"
+            onclick="window.HandOffSupport &amp;&amp; window.HandOffSupport.toggle()"
+            aria-label="Soporte técnico"
+            title="Soporte técnico"
+            aria-expanded="false"
+            aria-controls="supportPanel"
+          >
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.7.3-1.2.9-1.2 1.6v.5"></path><circle cx="12" cy="16.8" r=".6" fill="currentColor" stroke="none"></circle></svg>
+          </button>
+        </div>
+        <span class="header-shift" data-shift-wrap>
+          <span class="live-dot"></span><span data-shift-label>Turno</span>
+        </span>
+      </div>
+    </header>
 
     <main id="view" class="app-view" aria-live="polite"></main>
 
@@ -35,7 +65,209 @@
     <div id="chatRoot"></div>
     <div id="modalRoot"></div>
     <div id="toastRoot" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ============================================================
+         SOPORTE TÉCNICO · HTML estático, sin creación dinámica.
+         La visibilidad la controla la clase .active (CSS puro) y el
+         script inline de este mismo archivo. No depende de ningún
+         módulo, así que no puede romperse por caché ni por orden de carga.
+         ============================================================ -->
+    <section
+      class="support-panel"
+      id="supportPanel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="supportTitle"
+      aria-hidden="true"
+    >
+      <div
+        class="support-panel__backdrop"
+        data-support-close
+        onclick="window.HandOffSupport &amp;&amp; window.HandOffSupport.close()"
+        aria-hidden="true"
+      ></div>
+
+      <div class="support-panel__sheet">
+        <div class="support-panel__head">
+          <div class="support-panel__head-copy">
+            <div class="modal-eyebrow">Soporte técnico</div>
+            <h2 class="support-panel__title" id="supportTitle">Ayuda rápida</h2>
+          </div>
+          <button
+            type="button"
+            class="modal-close"
+            data-support-close
+            onclick="window.HandOffSupport &amp;&amp; window.HandOffSupport.close()"
+            aria-label="Cerrar soporte técnico"
+          >
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"></path><path d="M18 6 6 18"></path></svg>
+          </button>
+        </div>
+
+        <div class="support-panel__body">
+          <div class="support-advisor">
+            <div class="support-advisor__copy">
+              <strong>Asesoría en línea</strong>
+              <small>Abrimos el asistente con las opciones de soporte más usadas.</small>
+            </div>
+            <button
+              class="support-advisor__btn"
+              type="button"
+              onclick="window.HandOffSupport &amp;&amp; window.HandOffSupport.advisor()"
+            >
+              💬 Hablar con un asesor
+            </button>
+          </div>
+
+          <div class="support-section">
+            <div class="support-section__head">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.7.3-1.2.9-1.2 1.6v.5"></path><circle cx="12" cy="16.8" r=".6" fill="currentColor" stroke="none"></circle></svg>
+              <h4>Preguntas frecuentes</h4>
+            </div>
+            <div class="support-faq">
+              <details>
+                <summary>¿Cómo registro un pendiente para el siguiente turno?</summary>
+                <p>Ve a Entrega, escribe o dicta el pendiente, elige la prioridad Alta, Media o Baja y presiona +. Se guarda en localStorage.</p>
+              </details>
+              <details>
+                <summary>¿Cómo cierro mi turno?</summary>
+                <p>En Entrega, completa el resumen, revisa tus pendientes y presiona Cerrar turno. Se genera un reporte con ID único y se archivan los pendientes.</p>
+              </details>
+              <details>
+                <summary>¿Qué pasa si no tengo internet?</summary>
+                <p>La app sigue funcionando. Usa el Bloc Offline para dictar o escribir notas y conviértelas en pendientes cuando lo necesites.</p>
+              </details>
+              <details>
+                <summary>¿Cómo uso el dictado por voz?</summary>
+                <p>Toca el micrófono del resumen, del pendiente o del Bloc Offline y habla con naturalidad. El texto se transcribe en el campo.</p>
+              </details>
+              <details>
+                <summary>¿Dónde reviso los KPIs del turno?</summary>
+                <p>Abre la pestaña KPIs en la navegación inferior. Ahí verás resolución, alertas críticas, pendientes por prioridad y tiempo de cierre.</p>
+              </details>
+            </div>
+          </div>
+
+          <div class="support-contact">
+            <span class="support-contact__icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 4h4l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg>
+            </span>
+            <div class="support-contact__copy">
+              <strong>+52 800 000 0000</strong>
+              <a class="support-contact__mail" href="mailto:soporte@handoff360.local">soporte@handoff360.local</a>
+              <small>Asistencia 24/7 · Soporte simulado</small>
+            </div>
+            <a class="support-contact__call" href="tel:+528000000000" aria-label="Llamar al soporte">Llamar</a>
+          </div>
+
+          <div class="support-section">
+            <div class="support-section__head">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg>
+              <h4>Reportar una falla</h4>
+            </div>
+            <form class="support-form" id="supportForm">
+              <label for="supportCategory">Tipo de problema</label>
+              <select class="field-input" id="supportCategory" name="category">
+                <option value="Cierre de turno">No puedo cerrar el turno</option>
+                <option value="Dictado por voz">El dictado por voz no funciona</option>
+                <option value="Datos">Los datos no se guardan</option>
+                <option value="Visual">La app se ve mal</option>
+                <option value="Otro">Otro</option>
+              </select>
+
+              <label for="supportMessage">¿Qué está pasando?</label>
+              <textarea
+                class="field-input"
+                id="supportMessage"
+                name="message"
+                maxlength="280"
+                required
+                placeholder="Describe el fallo con el menor detalle posible."
+              ></textarea>
+
+              <label for="supportContact">Contacto opcional</label>
+              <input
+                class="field-input"
+                id="supportContact"
+                name="contact"
+                maxlength="60"
+                placeholder="Teléfono o correo"
+                autocomplete="off"
+              >
+
+              <button class="btn-primary support-submit" type="submit">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 3 10.5 13.5"></path><path d="M21 3l-6.8 18-3.7-7.5L3 9.8z"></path></svg>
+                Enviar reporte
+              </button>
+            </form>
+            <p class="support-hint">
+              Se guarda en este dispositivo.
+              <span id="supportTicketCount">0</span> reporte(s) enviado(s).
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
+
+  <!-- Control del panel de soporte: vive en este mismo archivo, sin
+       dependencias externas ni módulos asíncronos. -->
+  <script>
+    (function () {
+      const panel = document.getElementById('supportPanel');
+      const trigger = document.getElementById('supportTrigger');
+
+      function setOpen(open) {
+        if (!panel) return;
+        panel.classList.toggle('active', open);
+        panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+        if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) {
+          document.dispatchEvent(new CustomEvent('support:opened'));
+          const focusable = panel.querySelector('button, input, select, textarea');
+          if (focusable) {
+            window.setTimeout(function () {
+              focusable.focus({ preventScroll: true });
+            }, 60);
+          }
+        } else if (trigger) {
+          trigger.focus({ preventScroll: true });
+        }
+      }
+
+      window.HandOffSupport = {
+        open: function () { setOpen(true); },
+        close: function () { setOpen(false); },
+        toggle: function () {
+          setOpen(!panel || !panel.classList.contains('active'));
+        },
+        advisor: function () {
+          setOpen(false);
+          document.dispatchEvent(new CustomEvent('support:advisor'));
+        },
+        report: function (detail) {
+          document.dispatchEvent(new CustomEvent('support:report', { detail: detail }));
+        }
+      };
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && panel && panel.classList.contains('active')) {
+          setOpen(false);
+        }
+      });
+
+      document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (!form || form.id !== 'supportForm') return;
+        event.preventDefault();
+        window.HandOffSupport.report({
+          category: form.elements.category ? form.elements.category.value : '',
+          message: form.elements.message ? form.elements.message.value : '',
+          contact: form.elements.contact ? form.elements.contact.value : ''
+        });
+      });
+    })();
+  </script>
 
   <script type="module" src="/js/app.js"></script>
 </body>

@@ -45,7 +45,7 @@ HandOff360/
         │   ├── ui.js       # Toasts, modales, confirmaciones, utilidades DOM
         │   ├── icons.js    # Set de íconos SVG inline (sin librerías)
         │   ├── details.js  # Modales de detalle de reporte y caso
-        │   ├── support.js  # Modal de Soporte Técnico: FAQ, reporte de fallas y contacto
+        │   ├── support.js  # Soporte Técnico: enlaza los eventos del panel estático con el store y el chatbot
         │   ├── critical.js # Alerta crítica obligatoria al entrar al panel
         │   └── utils.js    # Helpers: uid, escape, fechas, debounce
         ├── views/
@@ -77,7 +77,7 @@ HandOff360/
 | `core/viewport.js` | Publica `--vvh`, `--vv-top` y `--kb-inset` desde `visualViewport` para que el shell y el chat se ajusten al área realmente visible con el teclado abierto. Ignora alturas degeneradas (< 240 px) para que el shell nunca colapse a 0. |
 | `core/ui.js` | Componentes transversales. No importa vistas ni store. Expone `bindTap()` para activar controles de forma robusta en touch. |
 | `core/details.js` | Abre modales de detalle de caso y reporte. El caso permite registrar una resolución local y eliminar la alerta activa asociada. |
-| `core/support.js` | Modal de Soporte Técnico: FAQ operativas, reporte de fallas, contacto 24/7 simulado y botón de asesor. Recibe `onTalkToAdvisor` por callback; no importa vistas ni el chatbot. |
+| `core/support.js` | Enlaza los eventos del panel estático de Soporte (`support:advisor`, `support:report`, `support:opened`) con `addSupportTicket`, el contador de tickets y `onTalkToAdvisor`. El panel vive en `index.html`; no importa vistas ni el chatbot. |
 | `core/critical.js` | Selecciona la alerta más urgente y abre el modal crítico; registra el acuse local. No renderiza la vista ni apila modales. |
 | `views/*` | Renderizan y manejan sus eventos. Pueden llamar al store y al router. |
 | `views/access.view.js` | Captura nombre y área del operador; valida y llama a `setProfile`. No es autenticación. |
@@ -136,7 +136,7 @@ HandOff360/
 - `resolveCaseAlert(id, caseId, note)` es la única vía para resolver un caso desde la alerta: valida la nota, guarda `case.resolution = { note, at, by, area, severity, responseMs }`, marca el caso como `Resuelto`, agrega la entrada a `timeline`, elimina de `sector.alerts` todas las alertas con ese `caseId`, registra la bitácora, persiste y emite. `severity` y `responseMs` alimentan los KPIs.
 - `notes` es el Bloc Offline: `addNote(id, text)`, `deleteNote(id, noteId)` y `convertNotesToPendings(id, noteIds)` son las únicas vías. Una nota convertida queda marcada con `converted: true` y `convertedAt` para no duplicar pendientes.
 - `convertNotesToPendings()` crea pendientes de prioridad `media` y registra una sola entrada de bitácora por conversión.
-- `supportTickets` guarda los reportes de fallas enviados desde el modal de Soporte: `addSupportTicket(id, { category, message, contact })` es la única vía.
+- `supportTickets` guarda los reportes de fallas enviados desde el panel de Soporte: `addSupportTicket(id, { category, message, contact })` es la única vía.
 - `staff` es la plantilla del Encargado de Área: `addStaffMember(id, { name, role, area, shift })`, `updateStaffMember(id, staffId, patch)` y `removeStaffMember(id, staffId)` son las únicas vías. Cada persona tiene `shift` (`matutino`/`vespertino`/`nocturno`), `area` y `active` (si está en puesto o falta).
 - La resolución es local: no modifica reportes históricos ni sincroniza con otros dispositivos.
 - Al cargar datos antiguos, `initStore()` normaliza `meta.areas` y descarta perfiles con área inválida; no se cambia la versión de almacenamiento.
@@ -202,10 +202,10 @@ Vista/evento → store.action() → state en memoria → localStorage → emit �
 - El detalle de caso (`core/details.js`) muestra una resolución interactiva si el caso no tiene `resolution`: textarea, dictado por voz y acción primaria “Resolver y Cerrar Alerta”. La nota es obligatoria; al guardar se cierra el modal y el dashboard se re-renderiza sin la alerta. Si el caso ya fue resuelto, muestra la nota y los metadatos de resolución.
 - `modal()` acepta `onMount(overlay, close)` para conectar controles dentro del modal recién creado y `onClose` para liberar recursos transversales (por ejemplo, detener el dictado al cerrar con X, fondo o Escape).
 - `modal()` revela el overlay con `requestAnimationFrame` **y** un `setTimeout` de respaldo: si el navegador throttlea la animación (pestaña en segundo plano, modo de bajo consumo), el modal debe quedar visible e interactible de todos modos. El `reveal` respeta el flag `closed` y su timer se cancela al cerrar, para que un modal cerrado **no reaparezca** y tape la pantalla.
-- `bindTap(element, handler)` (en `core/ui.js`) activa un control con toque, ratón o teclado: escucha `pointerup` y descarta el `click` sintetizado posterior. Un arrastre (movimiento > 12 px) no dispara la acción. Se usa en el botón de Soporte del header, en el botón de asesor del modal y en las acciones de los modales.
+- `bindTap(element, handler)` (en `core/ui.js`) activa un control con toque, ratón o teclado: escucha `pointerup` y descarta el `click` sintetizado posterior. Un arrastre (movimiento > 12 px) no dispara la acción. Se reserva para las acciones dentro de modales; el botón de Soporte y el FAB del asistente usan `click` nativo.
 - El scrim del chat (`closeFromScrim`) **ignora los clics de los primeros 500 ms** tras abrir el panel: en móvil, el `click` sintetizado del toque que abre el chat llega tarde y cae sobre el scrim, lo que cerraba el asistente en el mismo gesto.
-- El modal de Soporte (`core/support.js`) muestra FAQ operativas en `<details>`, un formulario de reporte de fallas, el contacto 24/7 simulado (teléfono + correo) y un botón “💬 Hablar con un asesor”. El reporte se guarda con `addSupportTicket` y el modal se cierra al enviar.
-- El botón de asesor cierra el modal e invoca `onTalkToAdvisor` (callback que `app.js` conecta con `openAdvisorChat`). `core/` nunca importa `features/`: la costura se hace por callback.
+- El panel de Soporte es HTML estático en `index.html` (`.support-panel`), se abre con la clase `.active` y un script inline que expone `window.HandOffSupport` (`open`, `close`, `toggle`, `advisor`, `report`). No usa `modal()` ni creación dinámica: abre de inmediato y no depende del orden de carga de los módulos. Incluye FAQ en `<details>`, formulario de reporte de fallas, contacto 24/7 simulado y botón “💬 Hablar con un asesor”. El reporte se guarda con `addSupportTicket` y el panel se cierra al enviar.
+- El botón de asesor cierra el panel e invoca `onTalkToAdvisor` (callback que `app.js` conecta con `openAdvisorChat`). `core/` nunca importa `features/`: la costura se hace por callback.
 - `openAdvisorChat()` (en `features/chatbot.js`) abre el panel del asistente e inyecta un mensaje con `advisor: true` y los 6 `chips` de soporte. Si ya existe un mensaje de asesor, solo abre el panel sin duplicarlo.
 - Los chips de soporte se renderizan como `.msg-chip` dentro del mensaje y responden con `handleSupportChip(id)`, que devuelve una solución orientativa local y, en el chip de asesor, reitera la asistencia en línea.
 
@@ -329,10 +329,10 @@ $env:HOST = "0.0.0.0"
 11. Al identificarse y entrar al panel, aparece automáticamente el modal de alerta crítica del sector con caso/ID y tiempo; al cerrarlo se puede navegar y no reaparece hasta una nueva identificación.
 12. Abrir una alerta con caso permite escribir o dictar una resolución; al guardarla, la alerta desaparece del dashboard, baja el contador, la nota persiste tras recargar y el caso queda como `Resuelto`.
 13. La pestaña KPIs muestra los 4 indicadores y se recalcula al resolver una alerta o completar un pendiente (tasa, críticas atendidas, mezcla por prioridad y tiempo de cierre).
-14. El botón de Soporte abre el modal con FAQ, reporte de fallas y contacto 24/7; el reporte enviado queda guardado en `localStorage`.
+14. El botón de Soporte abre el panel con FAQ, reporte de fallas y contacto 24/7; el reporte enviado queda guardado en `localStorage`.
 15. El botón “💬 Hablar con un asesor” abre el asistente con el mensaje de asesor y los 6 chips de soporte; cada chip responde con una solución local y el estado persiste tras recargar.
 16. En móvil (puntero táctil) el chat se abre **sin teclado en pantalla**, los 6 chips quedan visibles y alcanzables con el dedo, y siguen siendo tocables con el teclado abierto tras hacer scroll.
-17. El botón de Soporte y el de asesor responden a un toque real en móvil: el modal no debe reaparecer tras cerrarse y el chat no debe cerrarse en el mismo gesto que lo abre.
+17. El botón de Soporte y el de asesor responden a un toque real en móvil: el panel no debe reaparecer tras cerrarse y el chat no debe cerrarse en el mismo gesto que lo abre.
 18. El Bloc Offline permite escribir y dictar notas, listarlas y convertirlas en pendientes oficiales tanto desde la vista como desde el chatbot; las notas persisten tras recargar.
 19. En Salud, el panel ofrece **Gestión de Encargado de Área**: se registra personal, se marca falta/en puesto, se mueve de área y de turno, y todo persiste tras recargar.
 20. El tablero de turnos muestra los tres turnos con cobertura, personal total, en puesto y faltas, más la distribución por área; en otros sectores esas rutas redirigen al panel.

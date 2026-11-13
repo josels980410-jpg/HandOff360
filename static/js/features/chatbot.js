@@ -10,7 +10,7 @@ import {
 import { searchSector } from '../core/search.js';
 import { navigate } from '../core/router.js';
 import { icon } from '../core/icons.js';
-import { bindTap, toast } from '../core/ui.js';
+import { toast } from '../core/ui.js';
 import {
   escapeHtml,
   firstName,
@@ -115,7 +115,7 @@ export function initChat({ fab: fabElement, container }) {
   inputEl = container.querySelector('[data-input]');
   micBtn = container.querySelector('[data-mic]');
 
-  bindTap(fab, () => openChat());
+  fab.addEventListener('click', () => openChat());
   scrim.addEventListener('click', closeFromScrim);
   container.querySelector('[data-close]').addEventListener('click', closeChat);
   container.querySelector('[data-send]').addEventListener('click', () => submit());

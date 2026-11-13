@@ -1673,8 +1673,92 @@ img {
 }
 
 /* ============================================================
-   Soporte técnico
+   Soporte técnico · panel estático (HTML fijo + clase .active)
    ============================================================ */
+
+.support-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: none;
+}
+
+.support-panel.active {
+  display: block;
+}
+
+.support-panel__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 8, 7, 0.52);
+  animation: support-fade 0.18s ease both;
+}
+
+.support-panel__sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 90%;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -20px 60px rgba(5, 8, 7, 0.5);
+  animation: support-rise 0.24s cubic-bezier(0.32, 0.72, 0.24, 1) both;
+  overflow: hidden;
+}
+
+.support-panel__head {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 18px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.support-panel__head-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.support-panel__title {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.support-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 16px 18px 20px;
+}
+
+@keyframes support-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes support-rise {
+  from {
+    transform: translateY(26px);
+    opacity: 0.4;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 
 .support-section {
   margin-top: 4px;
