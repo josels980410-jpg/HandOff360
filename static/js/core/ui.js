@@ -59,7 +59,10 @@ export function modal({
   `;
 
   root.appendChild(overlay);
-  requestAnimationFrame(() => overlay.classList.add('is-open'));
+
+  const reveal = () => overlay.classList.add('is-open');
+  requestAnimationFrame(reveal);
+  window.setTimeout(reveal, 60);
 
   let closed = false;
   const close = () => {

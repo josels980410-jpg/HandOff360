@@ -100,7 +100,7 @@ export function initChat({ fab: fabElement, container }) {
       <div class="chat-body" data-body></div>
       <div class="chat-suggest" data-suggest></div>
       <div class="chat-composer">
-        <input class="chat-input" type="text" placeholder="Escribe o dicta un comando…" autocomplete="off" data-input>
+        <input class="chat-input" type="text" placeholder="Escribe o dicta un comando…" autocomplete="off" enterkeyhint="send" data-input>
         <button class="chat-mic" type="button" data-mic aria-label="Dictar mensaje">${icon('mic')}</button>
         <button class="chat-send" type="button" data-send aria-label="Enviar mensaje">${icon('send')}</button>
       </div>
@@ -114,7 +114,7 @@ export function initChat({ fab: fabElement, container }) {
   inputEl = container.querySelector('[data-input]');
   micBtn = container.querySelector('[data-mic]');
 
-  fab.addEventListener('click', openChat);
+  fab.addEventListener('click', () => openChat());
   scrim.addEventListener('click', closeChat);
   container.querySelector('[data-close]').addEventListener('click', closeChat);
   container.querySelector('[data-send]').addEventListener('click', () => submit());
@@ -158,14 +158,20 @@ export function setChatSector(id) {
   if (panel.classList.contains('is-open')) renderMessages();
 }
 
-export function openChat() {
+function isTouchDevice() {
+  return window.matchMedia('(pointer: coarse)').matches;
+}
+
+export function openChat({ focus = true } = {}) {
   if (!sectorId) return;
   ensureGreeting();
   panel.classList.add('is-open');
   scrim.classList.add('is-open');
   panelOpen = true;
   renderMessages();
-  window.setTimeout(() => inputEl.focus({ preventScroll: true }), 280);
+  if (focus && !isTouchDevice()) {
+    window.setTimeout(() => inputEl.focus({ preventScroll: true }), 280);
+  }
 }
 
 export function closeChat() {
@@ -182,7 +188,8 @@ export function openAdvisorChat() {
   const alreadyOpen = panel.classList.contains('is-open');
   const last = sector?.chat?.[sector.chat.length - 1];
   if (last?.advisor) {
-    openChat();
+    openChat({ focus: false });
+    scrollToAdvisorMessage();
     return;
   }
   appendChat(sectorId, {
@@ -192,9 +199,13 @@ export function openAdvisorChat() {
     chips: SUPPORT_CHIPS.map((chip) => ({ id: chip.id, label: chip.label })),
   });
   if (alreadyOpen) renderMessages();
-  else openChat();
+  else openChat({ focus: false });
+  scrollToAdvisorMessage();
 }
 
+function scrollToAdvisorChips() {
+  scrollToAdvisorMessage();
+}
 function handleSupportChip(chipId) {
   const chip = SUPPORT_CHIPS.find((item) => item.id === chipId);
   if (!chip) return;
@@ -315,6 +326,21 @@ function renderMessages() {
     })
     .join('');
   bodyEl.scrollTop = bodyEl.scrollHeight;
+}
+
+function scrollToAdvisorMessage() {
+  window.requestAnimationFrame(() => {
+    const advisorMsg = bodyEl?.querySelector('.msg--chips');
+    if (!advisorMsg) return;
+    const bodyRect = bodyEl.getBoundingClientRect();
+    const msgRect = advisorMsg.getBoundingClientRect();
+    const delta = msgRect.top - bodyRect.top;
+    if (delta < 0) {
+      bodyEl.scrollTop += delta - 4;
+    } else if (msgRect.bottom > bodyRect.bottom) {
+      bodyEl.scrollTop += msgRect.bottom - bodyRect.bottom + 4;
+    }
+  });
 }
 
 function severityLabel(severity) {

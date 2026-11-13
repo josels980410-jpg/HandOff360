@@ -1,4 +1,5 @@
 import { initStore, getSector, subscribe } from './core/store.js';
+import { initViewport } from './core/viewport.js';
 import { currentRoute, onRouteChange, navigate } from './core/router.js';
 import { icon } from './core/icons.js';
 import { escapeHtml } from './core/utils.js';
@@ -42,6 +43,7 @@ let lastKey = '';
 
 function boot() {
   initStore();
+  initViewport();
   initChat({ fab: els.fab, container: els.chatRoot });
   bindShell();
   subscribe(() => render({ preserveScroll: true }));

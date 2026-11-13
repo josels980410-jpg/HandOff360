@@ -40,6 +40,7 @@ HandOff360/
         │   ├── router.js   # Rutas por hash (select/acceso/salud/logistica/retail + tabs)
         │   ├── search.js   # Búsqueda pura de reportes y casos por nombre o ID
         │   ├── metrics.js  # Cálculo puro de KPIs del sector (resolución, críticas, cierre)
+        │   ├── viewport.js # Variables CSS del viewport visible y del teclado en pantalla
         │   ├── ui.js       # Toasts, modales, confirmaciones, utilidades DOM
         │   ├── icons.js    # Set de íconos SVG inline (sin librerías)
         │   ├── details.js  # Modales de detalle de reporte y caso
@@ -69,6 +70,7 @@ HandOff360/
 | `core/router.js` | Rutas por hash. Nunca recargar la página. |
 | `core/search.js` | Funciones puras de búsqueda. No conoce el DOM ni el store. |
 | `core/metrics.js` | Cálculo puro de los KPIs del sector a partir del estado. No muta nada ni conoce el DOM. |
+| `core/viewport.js` | Publica `--vvh`, `--vv-top` y `--kb-inset` desde `visualViewport` para que el shell y el chat se ajusten al área realmente visible con el teclado abierto. |
 | `core/ui.js` | Componentes transversales. No importa vistas ni store. |
 | `core/details.js` | Abre modales de detalle de caso y reporte. El caso permite registrar una resolución local y eliminar la alerta activa asociada. |
 | `core/support.js` | Modal de Soporte Técnico: FAQ operativas, reporte de fallas, contacto 24/7 simulado y botón de asesor. Recibe `onTalkToAdvisor` por callback; no importa vistas ni el chatbot. |
@@ -172,6 +174,8 @@ Vista/evento → store.action() → state en memoria → localStorage → emit �
 - `kpis.view.js` solo presenta: los valores salen de `computeSectorMetrics(sector)` y la vista no escribe en el store.
 - `bloc.view.js` captura notas con texto o voz, las guarda vía `addNote` y permite convertirlas en pendientes o borrarlas con confirmación.
 - El chatbot expone el Bloc Offline: la sugerencia “Bloc Offline” lista las notas y la acción “Convertir a pendientes” crea los pendientes oficiales.
+- En pantallas táctiles el chat **no hace autofocus** al abrirse: el teclado en pantalla taparía el panel y dejaría los chips de soporte fuera de alcance. El foco se da solo cuando el operador toca el campo.
+- El panel del chat y el shell se dimensionan con `--vvh` (viewport visible), no con `100dvh`, para que el teclado en pantalla no los empuje fuera de la pantalla.
 
 ### 3.5 Modales y toasts
 
@@ -183,6 +187,7 @@ Vista/evento → store.action() → state en memoria → localStorage → emit �
 - La alerta mostrada es la más urgente de `sector.alerts` (crítica más reciente; fallback a la de mayor severidad disponible). Al cerrar, el dashboard y las pestañas quedan navegables.
 - El detalle de caso (`core/details.js`) muestra una resolución interactiva si el caso no tiene `resolution`: textarea, dictado por voz y acción primaria “Resolver y Cerrar Alerta”. La nota es obligatoria; al guardar se cierra el modal y el dashboard se re-renderiza sin la alerta. Si el caso ya fue resuelto, muestra la nota y los metadatos de resolución.
 - `modal()` acepta `onMount(overlay, close)` para conectar controles dentro del modal recién creado y `onClose` para liberar recursos transversales (por ejemplo, detener el dictado al cerrar con X, fondo o Escape).
+- `modal()` revela el overlay con `requestAnimationFrame` **y** un `setTimeout` de respaldo: si el navegador throttlea la animación (pestaña en segundo plano, modo de bajo consumo), el modal debe quedar visible e interactible de todos modos.
 - El modal de Soporte (`core/support.js`) muestra FAQ operativas en `<details>`, un formulario de reporte de fallas, el contacto 24/7 simulado (teléfono + correo) y un botón “💬 Hablar con un asesor”. El reporte se guarda con `addSupportTicket` y el modal se cierra al enviar.
 - El botón de asesor cierra el modal e invoca `onTalkToAdvisor` (callback que `app.js` conecta con `openAdvisorChat`). `core/` nunca importa `features/`: la costura se hace por callback.
 - `openAdvisorChat()` (en `features/chatbot.js`) abre el panel del asistente e inyecta un mensaje con `advisor: true` y los 6 `chips` de soporte. Si ya existe un mensaje de asesor, solo abre el panel sin duplicarlo.
@@ -310,8 +315,9 @@ $env:HOST = "0.0.0.0"
 13. La pestaña KPIs muestra los 4 indicadores y se recalcula al resolver una alerta o completar un pendiente (tasa, críticas atendidas, mezcla por prioridad y tiempo de cierre).
 14. El botón de Soporte abre el modal con FAQ, reporte de fallas y contacto 24/7; el reporte enviado queda guardado en `localStorage`.
 15. El botón “💬 Hablar con un asesor” abre el asistente con el mensaje de asesor y los 6 chips de soporte; cada chip responde con una solución local y el estado persiste tras recargar.
-16. El Bloc Offline permite escribir y dictar notas, listarlas y convertirlas en pendientes oficiales tanto desde la vista como desde el chatbot; las notas persisten tras recargar.
-17. La app funciona sin conexión (todo está en `localStorage`).
+16. En móvil (puntero táctil) el chat se abre **sin teclado en pantalla**, los 6 chips quedan visibles y alcanzables con el dedo, y siguen siendo tocables con el teclado abierto tras hacer scroll.
+17. El Bloc Offline permite escribir y dictar notas, listarlas y convertirlas en pendientes oficiales tanto desde la vista como desde el chatbot; las notas persisten tras recargar.
+18. La app funciona sin conexión (todo está en `localStorage`).
 
 ---
 

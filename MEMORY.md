@@ -33,8 +33,7 @@ Cuando un turno termina, la información operativa (pendientes, alertas, novedad
 - **Dashboard**: hero con indicador principal, KPIs, alertas críticas, pendientes activos, último cierre.
 - **KPIs y métricas operativas**: pestaña propia con tasa de resolución de turno, alertas críticas atendidas, distribución de pendientes por prioridad y tiempo promedio de cierre, todo calculado desde `localStorage`.
 - **Entrega de turno**: resumen y pendientes con dictado por voz; el pendiente dictado se integra al campo, se guarda con prioridad (alta/media/baja) y el cierre genera reporte y actualiza bitácora.
-- **Soporte Técnico**: acceso directo en el header de cada sector; modal con FAQ operativas, reporte de fallas guardado localmente, contacto 24/7 simulado y botón “💬 Hablar con un asesor” que abre el asistente con 6 chips de soporte.
-- **Bloc Offline**: pestaña propia para escribir o dictar notas rápidas sin internet, guardadas en `localStorage` y convertibles en pendientes oficiales.
+- **Soporte Técnico**: acceso directo en el header de cada sector; modal con FAQ operativas, reporte de fallas guardado localmente, contacto 24/7 simulado y botón “💬 Hablar con un asesor” que abre el asistente con 6 chips de soporte.- **Bloc Offline**: pestaña propia para escribir o dictar notas rápidas sin internet, guardadas en `localStorage` y convertibles en pendientes oficiales.
 - **Historial y buscador**: reportes de turno y casos del sector; búsqueda por nombre o ID; detalle con línea de tiempo.
 - **Resolución de alertas**: desde el detalle de un caso se escribe o dicta la resolución; al guardarla se cierra la alerta activa, baja el contador del dashboard y el caso queda como `Resuelto`.
 - **Chatbot asistente flotante**: lenguaje natural local (sin API externa) con acciones reales: resumen, pendientes, alertas, búsqueda, preparar/cerrar turno, navegación, lectura del Bloc Offline, conversión de notas en pendientes y 6 chips de soporte interactivo.
@@ -77,6 +76,8 @@ Cuando un turno termina, la información operativa (pendientes, alertas, novedad
 | D18 | El chatbot como interfaz del Bloc Offline | Las sugerencias “Bloc Offline” y “Convertir notas a pendientes” permiten que la IA lea y estructure las notas sin salir del chat. |
 | D19 | Soporte conectado al asistente por callback | `core/support.js` no importa `features/`: recibe `onTalkToAdvisor` y `app.js` lo conecta con `openAdvisorChat()`. Así `core/` sigue sin depender de `features/` y el flujo inverso tampoco se rompe. |
 | D20 | Chips de soporte embebidos en el mensaje | Los 6 atajos viven dentro del mensaje de asesor (`.msg-chips`) y no en la barra de sugerencias, para que el orden contextual sea el que guíe al usuario y no una lista global. |
+| D21 | El shell mide el viewport visible, no el de layout | `core/viewport.js` publica `--vvh`/`--vv-top`/`--kb-inset` desde `visualViewport`. Con `100dvh` el teclado en pantalla dejaba el panel del chat anclado fuera de la vista y los chips quedaban inalcanzables en iOS. |
+| D22 | El chat no roba el foco en táctil | Abrir el asistente con `focus: false` evita que el teclado tape los 6 chips de soporte; el operador toca el campo cuando quiere escribir. En escritorio se mantiene el autofocus por comodidad. |
 
 ---
 
@@ -193,6 +194,7 @@ Reglas de navegación:
 - Para ver en el teléfono: `python app.py` y abrir `http://<IP-local>:5000`. `app.py` lee `PORT` (por defecto 5000), `HOST` (por defecto `0.0.0.0`) y `FLASK_DEBUG` (por defecto 0) del entorno.
 - Despliegue en Render: `Procfile` (`web: python app.py`) y `render.yaml` (build `pip install -r requirements.txt`, start `python app.py`, health check `/health`).
 - Si responde "conexión rechazada", el servidor Flask no está corriendo: relanzarlo con `run.ps1`.
+- En móvil el teclado en pantalla reduce el viewport visible; `core/viewport.js` lo refleja en `--vvh` para que el shell y el panel del chat se ajusten. Si el navegador no reporta `visualViewport`, la app cae a `100dvh` y el teclado puede cubrir la parte inferior.
 
 ---
 
@@ -267,4 +269,5 @@ Reglas de navegación:
 | 2026-11-12 | Bloc Offline: pestaña `bloc`, notas persistidas en `notes[]` con escritura y dictado, borrado con confirmación y conversión a pendientes oficiales; el chatbot local lee y convierte notas desde el chat | Equipo HandOff 360 |
 | 2026-11-12 | Header adaptativo con container queries: 5 pestañas sin truncar, indicador de turno colapsado a punto, FAB y toasts reposicionados para no tapar acciones; verificación E2E de KPIs/Soporte/Bloc en los 3 sectores con 0 eventos de consola | Equipo HandOff 360 |
 | 2026-11-12 | Soporte conectado al asistente: botón “💬 Hablar con un asesor”, correo simulado, `onTalkToAdvisor` por callback, `openAdvisorChat()` con mensaje de asesor y 6 chips de soporte que responden localmente y persisten tras recargar | Equipo HandOff 360 |
+| 2026-11-12 | Fix móvil del chat: `core/viewport.js` publica `--vvh`/`--vv-top`/`--kb-inset`, el shell mide el viewport visible, sin autofocus en táctil, `min-height: 0` en la columna flexible del chat y fallback sin `requestAnimationFrame` en los modales; verificado con eventos táctiles reales a 320/390 px | Equipo HandOff 360 |
 | 2026-11-12 | Compatibilidad con Render: `app.py` lee `PORT` dinámico y `HOST=0.0.0.0` por defecto, `FLASK_DEBUG` opt-in (el reloader de Werkzeug no es apto en producción), `Procfile` y `render.yaml` con health check `/health` | Equipo HandOff 360 |
